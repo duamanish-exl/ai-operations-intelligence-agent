@@ -1,6 +1,6 @@
 #  Insight Forge: AI-Powered KPI Investigation Agent
 
-##  Overview
+## Overview
 
 **Insight Forge** is an AI-powered KPI Investigation Agent designed for utility operations teams to understand **why a business KPI changed**, identify the root causes behind the movement, and provide clear, actionable recommendations to stakeholders.
 
@@ -14,20 +14,15 @@ This project is not a traditional reporting dashboard. Instead of only showing K
 
 The platform investigates the KPI movement by analyzing operational data across accounts, billing, payments, complaints, meter readings, calls, and contracts. It then generates a business-friendly explanation supported by evidence from the underlying data.
 
----
-
 ##  Project Objective
 
 The main objective of Insight Forge is to reduce manual KPI investigation effort by automating the process of identifying root causes behind operational changes.
 
 In utility operations, stakeholders often know **what changed**, but they need analysts to help explain **why it changed**. This project aims to bridge that gap by using AI to perform data-driven investigations and explain the impact in simple business language.
 
----
-
 ##  Business Problem
 
 Utility companies monitor multiple operational KPIs across customer service, collections, billing, metering, and account health.
-
 When a KPI changes unexpectedly, analysts usually need to manually check:
 
 - Customer account health
@@ -41,7 +36,7 @@ When a KPI changes unexpectedly, analysts usually need to manually check:
 - Contract changes
 - Customer risk flags
 
-This manual investigation process can be:
+## This manual investigation process can be:
 
 - Time-consuming
 - Reactive
@@ -52,14 +47,10 @@ This manual investigation process can be:
 
 Insight Forge solves this by allowing users to ask natural language questions and receive AI-generated root cause summaries.
 
----
-
 ##  Solution Summary
 
 Insight Forge acts as an AI-powered investigation assistant for operational KPI analysis.
-
 The user can select a KPI or ask a direct question. The system then:
-
 1. Detects KPI movement
 2. Compares current performance against previous periods
 3. Identifies impacted account groups
@@ -68,8 +59,6 @@ The user can select a KPI or ask a direct question. The system then:
 6. Quantifies the impact of each driver
 7. Generates a clear investigation summary
 8. Suggests recommended actions
-
----
 
 ##  What Makes Insight Forge Different?
 
@@ -104,26 +93,19 @@ Recommended actions:
 3. Monitor high-bill customers before the next billing cycle.
 4. Create targeted payment support campaigns.
 
- Initial KPIs Covered
-
+## Initial KPIs Covered
 The current Proof of Concept focuses on two operational KPIs.
 
 1. Debt %
-Definition
+Definition: Debt % measures the percentage of active customer accounts that currently have a debt amount greater than zero.
 
-Debt % measures the percentage of active customer accounts that currently have a debt amount greater than zero.
+Debt % = (Number of active accounts where DEBT_AMOUNT > 0)/(Total active accounts)* 100
 
-Debt % =
-Number of active accounts where DEBT_AMOUNT > 0
-/
-Total active accounts
-* 100
-
-Business Purpose
+## Business Purpose
 
 Debt % helps collections and operations teams understand how many customers are currently carrying debt. An increase in Debt % may indicate issues such as failed payments, higher bill amounts, affordability challenges, or seasonal consumption increases.
 
-Investigation Areas
+## Investigation Areas
 
 Insight Forge investigates Debt % using:
 
@@ -140,22 +122,17 @@ Affordability flag
 Vulnerable customer flag
 Contract status
 Calls and collection activity
+
 2. Complaint Rate
-Definition
+Definition: Complaint Rate measures the number of customer complaints relative to the number of active accounts.
 
-Complaint Rate measures the number of customer complaints relative to the number of active accounts.
+Complaint Rate = (Number of complaints)/(Total active accounts)* 100
 
-Complaint Rate =
-Number of complaints
-/
-Total active accounts
-* 100
-
-Business Purpose
+## Business Purpose
 
 Complaint Rate helps customer service and operations teams understand if customer dissatisfaction is increasing. An increase in Complaint Rate may be driven by estimated bills, meter issues, billing spikes, payment disputes, or debt collection activity.
 
-Investigation Areas
+## Investigation Areas
 
 Insight Forge investigates Complaint Rate using:
 
@@ -170,7 +147,9 @@ Debt collection events
 Customer calls
 Account type
 Vulnerability indicators
- High-Level Architecture
+
+## High-Level Architecture
+
 User Question
      |
      v
@@ -194,30 +173,24 @@ Evidence and Impact Summary
      v
 Business Explanation and Recommended Actions
 
- AI Investigation Flow
+ ## AI Investigation Flow
 
 The AI Investigation Agent follows a structured investigation process.
 
 Step 1: User Asks a Question
-
-Example:
-
-Why did Debt % increase in July?
+Example: Why did Debt % increase in July?
 
 Step 2: KPI Engine Calculates Movement
-
 The system calculates:
-
 Current month KPI value
 Previous month KPI value
 Absolute movement
 Percentage movement
 Impacted account count
 Impacted account types
+
 Step 3: Data Correlation
-
 The system checks related operational datasets such as:
-
 Account Health
 Account Balance
 Billing History
@@ -227,10 +200,9 @@ Meter Information
 Meter Reading
 Calls
 Contract
+
 Step 4: Root Cause Detection
-
 The investigation engine identifies drivers such as:
-
 Failed payment increase
 Estimated bill increase
 High consumption increase
@@ -239,43 +211,32 @@ Complaint category spike
 Specific account type impact
 Vulnerable customer impact
 Contract expiry impact
+
 Step 5: Impact Quantification
-
 The system measures how much each factor contributed to the KPI movement.
-
 Example:
-
 Failed payments contributed to 31% of the Debt % increase.
 Estimated bills contributed to 18% of the Complaint Rate increase.
 Residential accounts contributed to 46% of the total debt growth.
 
 Step 6: AI Explanation
-
 The AI generates a simple business explanation for stakeholders.
 
 Step 7: Recommended Actions
-
 The system suggests next-best actions based on the root causes.
-
- User Interface
-
+User Interface
 Insight Forge includes an investigation-first UI.
-
 The UI is not designed only to show charts. It is designed to help users ask questions, investigate results, and understand business drivers.
 
-Key UI Capabilities
+## Key UI Capabilities
 1. KPI Selection
-
 Users can select the KPI they want to investigate.
-
 Supported KPIs in current POC:
-
 Debt %
 Complaint Rate
+
 2. Natural Language Question Input
-
 Users can ask questions such as:
-
 Why did Debt % increase this month?
 Why are complaints rising?
 Which customer group is driving debt growth?
@@ -283,17 +244,11 @@ What are the top reasons for complaint increase?
 Show me the root cause for Debt % movement.
 
 3. Investigation Summary Panel
-
 The AI provides a short executive summary explaining the KPI movement.
-
-Example:
-
-Debt % increased by 4.2% compared to the previous month. The main drivers were failed Direct Debit payments, higher winter bill amounts, and increased debt among affordability-flagged customers.
+Example: Debt % increased by 4.2% compared to the previous month. The main drivers were failed Direct Debit payments, higher winter bill amounts, and increased debt among affordability-flagged customers.
 
 4. Root Cause Breakdown
-
 The UI shows key drivers such as:
-
 Failed payments
 Missed payments
 Estimated bills
@@ -301,23 +256,18 @@ Meter faults
 Billing spikes
 Account type impact
 Customer risk segment impact
+
 5. Evidence View
-
 Users can view supporting evidence behind the AI explanation.
-
 Example evidence:
-
 Failed payment count increased from 8,420 to 10,780.
 Average bill amount increased by 14.6%.
 Affordability-flagged accounts contributed 32% of newly debt-positive accounts.
 Estimated bills increased by 18.3%.
 
 6. Recommended Actions
-
 The AI suggests possible business actions.
-
 Example:
-
 Recommended Actions:
 1. Prioritize failed Direct Debit retry cases.
 2. Create payment support campaigns for affordability-flagged customers.
@@ -325,17 +275,15 @@ Recommended Actions:
 4. Monitor high-balance residential accounts for early intervention.
 
 7. Drill-Down View
-
 Users can drill down into:
-
 Account Type
 Complaint Type
 Payment Status
 Meter Status
 Customer Segment
 Account-level details
-🗄 Data Foundation
 
+## Data Foundation
 The project uses a synthetic but realistic UK utility dataset. The dataset is designed to support KPI monitoring, root cause analysis, AI investigation, and UI testing.
 
 Core Tables
@@ -350,13 +298,12 @@ Core Tables
 9. CONTRACT
 10. KPI_MONTHLY_SUMMARY
 
- Data Model Explanation
-1. ACCOUNT_HEALTH
+## Data Model Explanation
 
+1. ACCOUNT_HEALTH
 This table provides account-level operational health snapshots.
 
 Used for:
-
 Debt status
 Current balance
 Overall balance
@@ -371,7 +318,6 @@ Vulnerable flag
 Active account flag
 
 Key columns:
-
 ACCOUNT_NUMBER
 ACCOUNT_TYPE
 SNAPSHOT_DATE
@@ -565,7 +511,7 @@ START_DATE
 END_DATE
 CONTRACT_STATUS
 
-🔗 Table Relationships
+## Table Relationships
 ACCOUNT_NUMBER is the primary joining key across all major tables.
 
 ACCOUNT_HEALTH.ACCOUNT_NUMBER
@@ -585,7 +531,7 @@ MPXN is used to maintain consistency across:
 - METER_INFORMATION
 - CONTRACT
 
- Primary Keys
+## Primary Keys
 ACCOUNT_HEALTH       ACCOUNT_NUMBER + SNAPSHOT_DATE
 ACCOUNT_BALANCE      ACCOUNT_NUMBER + BALANCE_DATE
 BILLING_HISTORY      BILL_ID
@@ -596,7 +542,7 @@ COMPLAINTS           COMPLAINT_ID
 CALLS                CALL_ID
 CONTRACT             CONTRACT_ID
 
- Synthetic Data Generation Framework
+## Synthetic Data Generation Framework
 
 The project includes a synthetic data generation framework to create realistic utility data without using any real customer information.
 
@@ -632,11 +578,11 @@ Business
 Residential Occupier
 Business Occupier
 
- Embedded Business Scenarios
+## Embedded Business Scenarios
 
 The synthetic dataset includes realistic utility business patterns.
 
-Debt-Related Scenarios
+## Debt-Related Scenarios
 1. Failed Direct Debit payments increase debt.
 2. Missed payments increase arrears.
 3. Winter consumption increases bill amount.
@@ -647,7 +593,7 @@ Debt-Related Scenarios
 8. Repeated missed payments trigger collection calls.
 9. Promise to Pay may reduce debt in future periods.
 
-Complaint-Related Scenarios
+## Complaint-Related Scenarios
 1. Estimated bills increase billing complaints.
 2. Faulty meters increase meter issue complaints.
 3. Sudden bill increases trigger complaint spikes.
@@ -655,32 +601,31 @@ Complaint-Related Scenarios
 5. Debt collection activity may increase debt collection complaints.
 6. High complaint accounts generate more inbound calls.
 
- KPI Calculation Logic
-Debt %
+## KPI Calculation Logic
+
+## Debt %
 SELECT
     SNAPSHOT_DATE,
-    COUNT(DISTINCT CASE WHEN DEBT_AMOUNT > 0 THEN ACCOUNT_NUMBER END) * 100.0
-    / COUNT(DISTINCT ACCOUNT_NUMBER) AS DEBT_PERCENT
+    COUNT(DISTINCT CASE WHEN DEBT_AMOUNT > 0 THEN ACCOUNT_NUMBER END) * 100.0/ COUNT(DISTINCT ACCOUNT_NUMBER) AS DEBT_PERCENT
 FROM ACCOUNT_HEALTH
 WHERE ACTIVE_ACCOUNT_FLAG = 'Y'
 GROUP BY SNAPSHOT_DATE;
 
-Complaint Rate
+## Complaint Rate
 SELECT
     MONTH(COMPLAINT_DATE) AS COMPLAINT_MONTH,
-    COUNT(COMPLAINT_ID) * 100.0
-    / COUNT(DISTINCT ACCOUNT_NUMBER) AS COMPLAINT_RATE
+    COUNT(COMPLAINT_ID) * 100.0 /COUNT(DISTINCT ACCOUNT_NUMBER) AS COMPLAINT_RATE
 FROM COMPLAINTS
 GROUP BY MONTH(COMPLAINT_DATE);
 
 
 For production use, Complaint Rate should be calculated using complaint count divided by total active accounts for the same period.
 
- Root Cause Analysis Logic
+## Root Cause Analysis Logic
 
 The root cause engine compares KPI movement between two time periods.
 
-Example Logic for Debt %
+## Example Logic for Debt %
 If Debt % increased:
 1. Check failed payment trend.
 2. Check missed payment count.
@@ -693,7 +638,7 @@ If Debt % increased:
 9. Rank drivers by impact.
 10. Generate summary and recommendations.
 
-Example Logic for Complaint Rate
+## Example Logic for Complaint Rate
 If Complaint Rate increased:
 1. Check complaint type distribution.
 2. Check estimated bill count.
@@ -705,11 +650,11 @@ If Complaint Rate increased:
 8. Rank drivers by contribution.
 9. Generate explanation and recommended actions.
 
- Example Investigation Output
+## Example Investigation Output
 User Question
 Why did Complaint Rate increase in March?
 
-AI Investigation Summary
+## AI Investigation Summary
 Complaint Rate increased mainly due to billing-related complaints and meter issue complaints.
 
 Key findings:
@@ -725,11 +670,10 @@ Recommended actions:
 3. Improve proactive communication for high bill customers.
 4. Monitor complaint-prone segments in the next billing cycle.
 
- Technical Implementation
-Backend
+## Technical Implementation
 
+## Backend
 The backend is responsible for:
-
 Loading synthetic datasets
 Calculating KPIs
 Detecting KPI movement
@@ -737,58 +681,58 @@ Running root cause analysis
 Preparing investigation context
 Sending context to the AI layer
 Returning structured investigation output
-AI Layer
+
+## AI Layer
 
 The AI layer is responsible for:
-
 Understanding user questions
 Selecting the correct KPI
 Identifying relevant tables
 Interpreting root cause output
 Generating business-friendly explanations
 Suggesting recommended actions
-UI Layer
 
+## UI Layer
 The UI layer is responsible for:
-
 Taking user questions
 Displaying KPI movement
 Showing AI investigation summary
 Showing root cause drivers
 Showing supporting evidence
 Allowing user drill-down
- Suggested Technology Stack
+
+## Suggested Technology Stack
 Data Generation
 Python
 Pandas
 NumPy
 Faker
 
-Backend
+## Backend
 Python
 FastAPI
 SQLAlchemy
 Pandas
 
-AI Layer
+## AI Layer
 LLM-based investigation agent
 Prompt orchestration
 Context builder
 Root cause summarization
 
-Frontend UI
+## Frontend UI
 React
 TypeScript
 Tailwind CSS
 Shadcn UI
 
-Data Storage Options
+## Data Storage Options
 CSV for POC
 SQLite for local demo
 PostgreSQL for app integration
 Databricks or Fabric Lakehouse for scale
 
- Suggested Repository Structure
+## Suggested Repository Structure
 Insight_Forge/
 │
 ├── README.md
@@ -841,7 +785,8 @@ Insight_Forge/
     ├── validation_report.txt
     └── investigation_samples.json
 
- How to Run the Project
+## How to Run the Project
+
 1. Clone the Repository
 git clone https://github.com/your-username/Insight_Forge.git
 cd Insight_Forge
@@ -860,7 +805,7 @@ cd ui
 npm install
 npm run dev
 
- Expected Output Files
+## Expected Output Files
 
 After running the synthetic data framework, the following files should be generated:
 
@@ -876,7 +821,7 @@ CONTRACT.csv
 KPI_MONTHLY_SUMMARY.csv
 VALIDATION_REPORT.txt
 
- Data Quality Checks
+## Data Quality Checks
 
 The framework performs the following validation checks:
 
@@ -893,7 +838,8 @@ The framework performs the following validation checks:
 11. Debt amount and bill amount are realistic.
 12. Business rules are reflected in generated patterns.
 
- Future Enhancements
+## Future Enhancements
+
 Phase 1: Current POC
 KPI investigation
 Root cause analysis
@@ -917,7 +863,7 @@ Automated stakeholder summaries
 Action workflow generation
 Integration with enterprise data systems
 
- Project Vision
+## Project Vision
 
 Insight Forge transforms operational analytics from passive reporting into active investigation.
 
@@ -927,7 +873,7 @@ From "What happened?"
 To "Why did it happen?"
 To "What should we do next?"
 
-📌 Final Summary
+## Final Summary
 
 Insight Forge is an AI-powered KPI Investigation Agent for utility operations. It combines synthetic utility data, KPI calculation, root cause analysis, and a conversational UI to help stakeholders understand KPI movement in a faster and more actionable way.
 
