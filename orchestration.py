@@ -21,7 +21,7 @@ from tools.investigation_tools import (
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=""
+    api_key=" "
 )
 
 
