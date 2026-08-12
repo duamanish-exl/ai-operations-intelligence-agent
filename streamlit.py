@@ -1,106 +1,243 @@
 import streamlit as st
-from backend import investigate
+import json
+from datetime import datetime
+
+from orchestration import run_investigation
+
+
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
     page_title="AI Operations Intelligence",
-    page_icon="📊",
-    layout="wide"
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.title("📊 AI Operations Intelligence Agent")
-st.markdown("Investigate changes in business KPIs using AI.")
-kpi = st.sidebar.selectbox(
-    "Select KPI",
-    ["Debt %", "Complaint %"]
+
+# ============================================================
+# CUSTOM CSS
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+
+    .main-title {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .subtitle {
+        font-size: 16px;
+        color: #6b7280;
+        margin-bottom: 25px;
+    }
+
+    .status-box {
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 15px;
+    }
+
+    .section-title {
+        font-size: 22px;
+        font-weight: 600;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
-st.sidebar.header("Input KPI Data")
 
-previous_debt = st.sidebar.number_input(
-    "Previous Debt (%)",
-    min_value=0.0,
-    value=30.0,
-    step=0.1
-)
+# ============================================================
+# SIDEBAR
+# ============================================================
 
-current_debt = st.sidebar.number_input(
-    "Current Debt (%)",
-    min_value=0.0,
-    value=34.0,
-    step=0.1
-)
+with st.sidebar:
 
-if kpi == "Debt %":
-    previous_value = st.sidebar.number_input(
-        "Previous Debt %",
-        value=30.0
+    st.markdown("## 🤖 Operations AI")
+
+    st.markdown("---")
+
+    st.markdown("### Investigation")
+
+    kpi = st.selectbox(
+        "Select KPI",
+        [
+            "Complaint Rate",
+            "Debt %"
+        ]
     )
 
-    current_value = st.sidebar.number_input(
-        "Current Debt %",
-        value=34.0
+    st.markdown("---")
+
+    st.markdown("### Investigation Settings")
+
+    max_steps = st.number_input(
+        "Maximum investigation steps",
+        min_value=1,
+        max_value=3,
+        value=3
     )
 
-elif kpi == "Complaint %":
-    previous_value = st.sidebar.number_input(
-        "Previous Complaint %",
-        value=5.0
+    st.markdown("---")
+
+    st.caption(
+        "AI Operations Intelligence Agent"
     )
 
-    current_value = st.sidebar.number_input(
-        "Current Complaint %",
-        value=7.0
+    st.caption(
+        "Powered by OpenRouter + Claude"
     )
 
-payment_change = st.sidebar.number_input(
-    "Payment Change (%)",
-    value=12.0,
-    step=0.1
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.markdown(
+    '<div class="main-title">🤖 AI Operations Intelligence</div>',
+    unsafe_allow_html=True
 )
 
-billing_change = st.sidebar.number_input(
-    "Billing Change (%)",
-    value=22.0,
-    step=0.1
+st.markdown(
+    '<div class="subtitle">'
+    'Investigate KPI anomalies and identify evidence-based root causes.'
+    '</div>',
+    unsafe_allow_html=True
 )
 
-consumption_change = st.sidebar.number_input(
-    "Consumption Change (%)",
-    value=18.0,
-    step=0.1
-)
 
-st.subheader("Current KPI Values")
+# ============================================================
+# TOP INFORMATION CARDS
+# ============================================================
 
-col1, col2 = st.columns(2)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
+
     st.metric(
-        "Previous Debt",
-        f"{previous_debt:.2f}%"
+        label="📊 Selected KPI",
+        value=kpi
     )
 
 with col2:
-    delta = current_debt - previous_debt
+
     st.metric(
-        "Current Debt",
-        f"{current_debt:.2f}%",
-        delta=f"{delta:.2f}%"
+        label="🔍 Investigation",
+        value="AI Powered"
     )
 
-if st.button("🔍 Investigate", use_container_width=True):
+with col3:
 
-    with st.spinner("Investigating..."):
+    st.metric(
+        label="🧠 Investigation Steps",
+        value=f"{max_steps}"
+    )
 
-        result = investigate(
-            kpi,
-            previous_debt,
-            current_debt,
-            payment_change,
-            billing_change,
-            consumption_change
+with col4:
+
+    st.metric(
+        label="⚡ Status",
+        value="Ready"
+    )
+
+
+st.markdown("---")
+
+
+# ============================================================
+# INVESTIGATION BUTTON
+# ============================================================
+
+st.markdown(
+    "### 🔎 Run Investigation"
+)
+
+st.write(
+    f"Investigate the current **{kpi}** using the available "
+    "business investigation tools."
+)
+
+
+if st.button(
+    "🚀 Start Investigation",
+    type="primary",
+    use_container_width=True
+):
+
+    # --------------------------------------------------------
+    # STATUS
+    # --------------------------------------------------------
+
+    with st.status(
+        "Running AI investigation...",
+        expanded=True
+    ) as status:
+
+        st.write("📊 Calculating KPI...")
+
+        st.write("📅 Determining investigation period...")
+
+        st.write("🧠 AI Operations Agent analysing the KPI...")
+
+        st.write("🔍 Selecting investigation tools...")
+
+        try:
+
+            result = run_investigation()
+
+            status.update(
+                label="✅ Investigation completed",
+                state="complete",
+                expanded=False
+            )
+
+        except Exception as e:
+
+            status.update(
+                label="❌ Investigation failed",
+                state="error",
+                expanded=True
+            )
+
+            st.error(
+                f"Error while running investigation:\n\n{str(e)}"
+            )
+
+            result = None
+
+
+    # ========================================================
+    # DISPLAY RESULT
+    # ========================================================
+
+    if result:
+
+        st.markdown("---")
+
+        st.markdown(
+            "## 📋 Investigation Report"
         )
 
-    st.success("Investigation Complete")
+        st.markdown(result)
 
-    st.markdown(result)
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.markdown("---")
+
+st.caption(
+    f"AI Operations Intelligence • "
+    f"{datetime.now().strftime('%d %b %Y %H:%M')}"
+)
