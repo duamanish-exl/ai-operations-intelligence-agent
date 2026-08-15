@@ -1,5 +1,5 @@
 import pandas as pd
-
+from datetime import datetime
 from data_loader import load_table
 
 
@@ -15,15 +15,12 @@ def get_investigation_periods():
     accounts["SNAPSHOT_DATE"] = pd.to_datetime(
         accounts["SNAPSHOT_DATE"]
     )
-
-    current_date = min(
-        complaints["COMPLAINT_DATE"].max(),
-        accounts["SNAPSHOT_DATE"].max()
-    )
+    date_format = "%Y-%m-%d"
+    current_date = datetime.strptime("2025-11-03", date_format)
 
     current_start = current_date - pd.Timedelta(days=6)
 
-    previous_end = current_start - pd.Timedelta(days=1)
+    previous_end = datetime.strptime("2026-08-03", date_format)
 
     previous_start = previous_end - pd.Timedelta(days=6)
 
