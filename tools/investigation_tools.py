@@ -1,243 +1,549 @@
+from data_loader import load_table
 import pandas as pd
 
-from data_loader import load_table
 
+# ============================================================
+# HELPER
+# ============================================================
+
+def filter_period(df, date_column, start_date, end_date):
+    """
+    Filter a dataframe between two dates.
+    """
+
+    df = df.copy()
+
+    df[date_column] = pd.to_datetime(
+        df[date_column],
+        errors="coerce"
+    )
+
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    return df[
+        (df[date_column] >= start_date) &
+        (df[date_column] <= end_date)
+    ]
+
+
+# ============================================================
+# 1. COMPLAINT INVESTIGATION
+# ============================================================
 
 def investigate_complaints(periods):
 
     complaints = load_table("COMPLAINTS")
 
-    complaints["COMPLAINT_DATE"] = pd.to_datetime(
-        complaints["COMPLAINT_DATE"]
+    current = filter_period(
+        complaints,
+        "COMPLAINT_DATE",
+        periods["current_start"],
+        periods["current_end"]
     )
 
-    current = complaints[
-        (complaints["COMPLAINT_DATE"] >= periods["current_start"])
-        & (complaints["COMPLAINT_DATE"] <= periods["current_end"])
-    ]
-
-    previous = complaints[
-        (complaints["COMPLAINT_DATE"] >= periods["previous_start"])
-        & (complaints["COMPLAINT_DATE"] <= periods["previous_end"])
-    ]
+    previous = filter_period(
+        complaints,
+        "COMPLAINT_DATE",
+        periods["previous_start"],
+        periods["previous_end"]
+    )
 
     return {
-        "investigation": "Complaint Investigation",
 
         "current_complaints": len(current),
+
         "previous_complaints": len(previous),
 
-        "categories": {
-            "current": current["CATEGORY"].value_counts().to_dict(),
-            "previous": previous["CATEGORY"].value_counts().to_dict()
-        },
+        "current_categories": (
+            current["CATEGORY"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "subcategories": {
-            "current": current["SUBCATEGORY"].value_counts().to_dict(),
-            "previous": previous["SUBCATEGORY"].value_counts().to_dict()
-        },
+        "previous_categories": (
+            previous["CATEGORY"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "severity": {
-            "current": current["SEVERITY"].value_counts().to_dict(),
-            "previous": previous["SEVERITY"].value_counts().to_dict()
-        },
+        "current_reasons": (
+            current["COMPLAINT_REASON"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "channels": {
-            "current": current["CHANNEL"].value_counts().to_dict(),
-            "previous": previous["CHANNEL"].value_counts().to_dict()
-        },
+        "previous_reasons": (
+            previous["COMPLAINT_REASON"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "root_causes": {
-            "current": current["ROOT_CAUSE_DRIVER"].value_counts().to_dict(),
-            "previous": previous["ROOT_CAUSE_DRIVER"].value_counts().to_dict()
-        }
+        "current_root_cause_drivers": (
+            current["ROOT_CAUSE_DRIVER"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_root_cause_drivers": (
+            previous["ROOT_CAUSE_DRIVER"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_channels": (
+            current["CHANNEL"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_channels": (
+            previous["CHANNEL"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_severity": (
+            current["SEVERITY"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_severity": (
+            previous["SEVERITY"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_escalations": (
+            current["ESCALATION_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_escalations": (
+            previous["ESCALATION_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_repeat_complaints": (
+            current["REPEAT_COMPLAINT_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_repeat_complaints": (
+            previous["REPEAT_COMPLAINT_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_vulnerable_customers": (
+            current["VULNERABLE_CUSTOMER_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_vulnerable_customers": (
+            previous["VULNERABLE_CUSTOMER_FLAG"]
+            .value_counts()
+            .to_dict()
+        )
     }
 
+
+# ============================================================
+# 2. BILLING INVESTIGATION
+# ============================================================
 
 def investigate_billing(periods):
 
     billing = load_table("BILLING_HISTORY")
 
-    billing["BILL_DATE"] = pd.to_datetime(
-        billing["BILL_DATE"]
+    current = filter_period(
+        billing,
+        "BILL_DATE",
+        periods["current_start"],
+        periods["current_end"]
     )
 
-    current = billing[
-        (billing["BILL_DATE"] >= periods["current_start"])
-        & (billing["BILL_DATE"] <= periods["current_end"])
-    ]
-
-    previous = billing[
-        (billing["BILL_DATE"] >= periods["previous_start"])
-        & (billing["BILL_DATE"] <= periods["previous_end"])
-    ]
+    previous = filter_period(
+        billing,
+        "BILL_DATE",
+        periods["previous_start"],
+        periods["previous_end"]
+    )
 
     return {
-        "investigation": "Billing Investigation",
 
         "current_bills": len(current),
+
         "previous_bills": len(previous),
 
-        "current_total_billed": current["BILL_AMOUNT"].sum(),
-        "previous_total_billed": previous["BILL_AMOUNT"].sum(),
+        "current_bill_amount": (
+            current["BILL_AMOUNT"].sum()
+        ),
 
-        "current_bill_status": current["BILL_STATUS"].value_counts().to_dict(),
-        "previous_bill_status": previous["BILL_STATUS"].value_counts().to_dict()
+        "previous_bill_amount": (
+            previous["BILL_AMOUNT"].sum()
+        ),
+
+        "current_average_bill": (
+            current["BILL_AMOUNT"].mean()
+            if len(current) > 0 else 0
+        ),
+
+        "previous_average_bill": (
+            previous["BILL_AMOUNT"].mean()
+            if len(previous) > 0 else 0
+        ),
+
+        "current_estimated_bills": (
+            current["ESTIMATED_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_estimated_bills": (
+            previous["ESTIMATED_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_bill_types": (
+            current["BILL_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_bill_types": (
+            previous["BILL_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_fuel_types": (
+            current["FUEL_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_fuel_types": (
+            previous["FUEL_TYPE"]
+            .value_counts()
+            .to_dict()
+        )
     }
 
+
+# ============================================================
+# 3. METER INVESTIGATION
+# ============================================================
 
 def investigate_meter(periods):
 
     readings = load_table("METER_READING")
-    meters = load_table("METER_INFORMATION")
 
-    readings["READ_DATE"] = pd.to_datetime(
-        readings["READ_DATE"]
+    current = filter_period(
+        readings,
+        "READING_DATE",
+        periods["current_start"],
+        periods["current_end"]
     )
 
-    current = readings[
-        (readings["READ_DATE"] >= periods["current_start"])
-        & (readings["READ_DATE"] <= periods["current_end"])
-    ]
-
-    previous = readings[
-        (readings["READ_DATE"] >= periods["previous_start"])
-        & (readings["READ_DATE"] <= periods["previous_end"])
-    ]
+    previous = filter_period(
+        readings,
+        "READING_DATE",
+        periods["previous_start"],
+        periods["previous_end"]
+    )
 
     return {
-        "investigation": "Meter Investigation",
 
-        "reading_status": {
-            "current": current["READ_STATUS"].value_counts().to_dict(),
-            "previous": previous["READ_STATUS"].value_counts().to_dict()
-        },
+        "current_readings": len(current),
 
-        "reading_types": {
-            "current": current["READ_TYPE"].value_counts().to_dict(),
-            "previous": previous["READ_TYPE"].value_counts().to_dict()
-        },
+        "previous_readings": len(previous),
 
-        "meter_faults": meters["METER_FAULT_FLAG"].value_counts().to_dict(),
+        "current_reading_types": (
+            current["READING_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "smart_meter_status": meters["SMART_METER_STATUS"].value_counts().to_dict()
+        "previous_reading_types": (
+            previous["READING_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_fuel_types": (
+            current["FUEL_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_fuel_types": (
+            previous["FUEL_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_consumption": (
+            current["CONSUMPTION_VALUE"].sum()
+        ),
+
+        "previous_consumption": (
+            previous["CONSUMPTION_VALUE"].sum()
+        )
     }
 
+
+# ============================================================
+# 4. PAYMENT INVESTIGATION
+# ============================================================
 
 def investigate_payments(periods):
 
     payments = load_table("PAYMENTS")
 
-    payments["PAYMENT_DATE"] = pd.to_datetime(
-        payments["PAYMENT_DATE"]
+    current = filter_period(
+        payments,
+        "PAYMENT_DATE",
+        periods["current_start"],
+        periods["current_end"]
     )
 
-    current = payments[
-        (payments["PAYMENT_DATE"] >= periods["current_start"])
-        & (payments["PAYMENT_DATE"] <= periods["current_end"])
-    ]
-
-    previous = payments[
-        (payments["PAYMENT_DATE"] >= periods["previous_start"])
-        & (payments["PAYMENT_DATE"] <= periods["previous_end"])
-    ]
+    previous = filter_period(
+        payments,
+        "PAYMENT_DATE",
+        periods["previous_start"],
+        periods["previous_end"]
+    )
 
     return {
-        "investigation": "Payment Investigation",
 
         "current_payments": len(current),
+
         "previous_payments": len(previous),
 
-        "current_payment_status": current[
-            "PAYMENT_STATUS"
-        ].value_counts().to_dict(),
+        "current_payment_status": (
+            current["PAYMENT_STATUS"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "previous_payment_status": previous[
-            "PAYMENT_STATUS"
-        ].value_counts().to_dict(),
+        "previous_payment_status": (
+            previous["PAYMENT_STATUS"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "current_payment_methods": current[
-            "PAYMENT_METHOD"
-        ].value_counts().to_dict(),
+        "current_payment_methods": (
+            current["PAYMENT_METHOD"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "previous_payment_methods": previous[
-            "PAYMENT_METHOD"
-        ].value_counts().to_dict()
+        "previous_payment_methods": (
+            previous["PAYMENT_METHOD"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_fail_reasons": (
+            current["FAIL_REASON"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_fail_reasons": (
+            previous["FAIL_REASON"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_amount_paid": (
+            current["AMOUNT_PAID"].sum()
+        ),
+
+        "previous_amount_paid": (
+            previous["AMOUNT_PAID"].sum()
+        )
     }
 
+
+# ============================================================
+# 5. CUSTOMER INTERACTION INVESTIGATION
+# ============================================================
 
 def investigate_customer_interactions(periods):
 
     calls = load_table("CALLS")
 
-    calls["CALL_DATE"] = pd.to_datetime(
-        calls["CALL_DATE"]
+    current = filter_period(
+        calls,
+        "CALL_DATE",
+        periods["current_start"],
+        periods["current_end"]
     )
 
-    current = calls[
-        (calls["CALL_DATE"] >= periods["current_start"])
-        & (calls["CALL_DATE"] <= periods["current_end"])
-    ]
-
-    previous = calls[
-        (calls["CALL_DATE"] >= periods["previous_start"])
-        & (calls["CALL_DATE"] <= periods["previous_end"])
-    ]
+    previous = filter_period(
+        calls,
+        "CALL_DATE",
+        periods["previous_start"],
+        periods["previous_end"]
+    )
 
     return {
-        "investigation": "Customer Interaction Investigation",
 
         "current_calls": len(current),
+
         "previous_calls": len(previous),
 
-        "contact_reasons": {
-            "current": current["CONTACT_REASON"].value_counts().to_dict(),
-            "previous": previous["CONTACT_REASON"].value_counts().to_dict()
-        },
+        "current_call_reasons": (
+            current["CALL_REASON"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "call_outcomes": {
-            "current": current["CALL_OUTCOME"].value_counts().to_dict(),
-            "previous": previous["CALL_OUTCOME"].value_counts().to_dict()
-        }
+        "previous_call_reasons": (
+            previous["CALL_REASON"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_outcomes": (
+            current["OUTCOME"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_outcomes": (
+            previous["OUTCOME"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_agent_teams": (
+            current["AGENT_TEAM"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_agent_teams": (
+            previous["AGENT_TEAM"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_average_call_duration": (
+            current["CALL_DURATION_MINS"].mean()
+            if len(current) > 0 else 0
+        ),
+
+        "previous_average_call_duration": (
+            previous["CALL_DURATION_MINS"].mean()
+            if len(previous) > 0 else 0
+        )
     }
 
+
+# ============================================================
+# 6. ACCOUNT HEALTH INVESTIGATION
+# ============================================================
 
 def investigate_account_health(periods):
 
     accounts = load_table("ACCOUNT_HEALTH")
 
-    accounts["SNAPSHOT_DATE"] = pd.to_datetime(
-        accounts["SNAPSHOT_DATE"]
+    current = filter_period(
+        accounts,
+        "SNAPSHOT_DATE",
+        periods["current_start"],
+        periods["current_end"]
     )
 
-    current = accounts[
-        (accounts["SNAPSHOT_DATE"] >= periods["current_start"])
-        & (accounts["SNAPSHOT_DATE"] <= periods["current_end"])
-    ]
-
-    previous = accounts[
-        (accounts["SNAPSHOT_DATE"] >= periods["previous_start"])
-        & (accounts["SNAPSHOT_DATE"] <= periods["previous_end"])
-    ]
+    previous = filter_period(
+        accounts,
+        "SNAPSHOT_DATE",
+        periods["previous_start"],
+        periods["previous_end"]
+    )
 
     return {
-        "investigation": "Account Health Investigation",
 
-        "current_accounts": current["ACCOUNT_NUMBER"].nunique(),
-        "previous_accounts": previous["ACCOUNT_NUMBER"].nunique(),
+        "current_accounts": len(current),
 
-        "account_types": {
-            "current": current["ACCOUNT_TYPE"].value_counts().to_dict(),
-            "previous": previous["ACCOUNT_TYPE"].value_counts().to_dict()
-        },
+        "previous_accounts": len(previous),
 
-        "vulnerability": {
-            "current": current["VULNERABILITY_FLAG"].value_counts().to_dict(),
-            "previous": previous["VULNERABILITY_FLAG"].value_counts().to_dict()
-        },
+        "current_account_types": (
+            current["ACCOUNT_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
 
-        "debt_status": {
-            "current": current["DEBT_STATUS"].value_counts().to_dict(),
-            "previous": previous["DEBT_STATUS"].value_counts().to_dict()
-        }
+        "previous_account_types": (
+            previous["ACCOUNT_TYPE"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_vulnerability": (
+            current["VULNERABLE_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_vulnerability": (
+            previous["VULNERABLE_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_affordability": (
+            current["AFFORDABILITY_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_affordability": (
+            previous["AFFORDABILITY_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_financial_flags": (
+            current["FINANCIAL_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_financial_flags": (
+            previous["FINANCIAL_FLAG"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_live_status": (
+            current["LIVE_STATUS"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "previous_live_status": (
+            previous["LIVE_STATUS"]
+            .value_counts()
+            .to_dict()
+        ),
+
+        "current_average_balance": (
+            current["CURRENT_BALANCE"].mean()
+            if len(current) > 0 else 0
+        ),
+
+        "previous_average_balance": (
+            previous["CURRENT_BALANCE"].mean()
+            if len(previous) > 0 else 0
+        )
     }

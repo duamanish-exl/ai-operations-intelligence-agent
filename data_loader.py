@@ -1,23 +1,22 @@
-"""
-data_loader.py
-==============
-Single entry point for reading the synthetic operations dataset. Every
-investigation tool calls load_table(name) rather than reading CSVs directly,
-so the data location, caching and dtype handling live in one place.
-
-Configure the dataset location via the INSIGHTFORGE_DATA_DIR environment
-variable, or edit DEFAULT_DATA_DIR below.
-"""
 from __future__ import annotations
+
 import os
 from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
 
-DEFAULT_DATA_DIR = Path(os.environ.get("INSIGHTFORGE_DATA_DIR", "./data"))
 
-# Canonical table name -> CSV filename
+BASE_DIR = Path(__file__).resolve().parent
+
+DEFAULT_DATA_DIR = Path(
+    os.environ.get(
+        "INSIGHTFORGE_DATA_DIR",
+        BASE_DIR / "data"
+    )
+)
+
+
 TABLES = {
     "ACCOUNT_HEALTH": "ACCOUNT_HEALTH.csv",
     "ACCOUNT_BALANCE": "ACCOUNT_BALANCE.csv",
@@ -29,7 +28,6 @@ TABLES = {
     "CALLS": "CALLS.csv",
     "CONTRACT": "CONTRACT.csv",
 }
-
 
 @lru_cache(maxsize=None)
 def load_table(name: str) -> pd.DataFrame:
