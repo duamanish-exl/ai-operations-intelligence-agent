@@ -24,6 +24,7 @@ from tools.investigation_tools import (
 # ============================================================
 
 OPENROUTER_API_KEY = ""
+
 if not OPENROUTER_API_KEY:
     raise RuntimeError(
         "OPENROUTER_API_KEY is not set. "
