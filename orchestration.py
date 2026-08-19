@@ -1,11 +1,13 @@
 import os
 import json
+import re
 from pathlib import Path
 
 from openai import OpenAI
 
 from kpi import (
-    calculate_complaint_rate,
+    SUPPORTED_KPIS,
+    calculate_kpi,
     get_investigation_periods,
 )
 
@@ -27,8 +29,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 if not OPENROUTER_API_KEY:
     raise RuntimeError(
-        "OPENROUTER_API_KEY is not set. "
-        "Set it in the same terminal used to start Streamlit."
+        "OPENROUTER_API_KEY is not set."
     )
 
 MODEL = os.getenv(
@@ -37,7 +38,10 @@ MODEL = os.getenv(
 )
 
 MAX_INVESTIGATION_STEPS = int(
-    os.getenv("MAX_INVESTIGATION_STEPS", "3")
+    os.getenv(
+        "MAX_INVESTIGATION_STEPS",
+        "3",
+    )
 )
 
 PROMPT_PATH = (
@@ -63,8 +67,8 @@ tools = [
             "name": "investigate_complaints",
             "description": (
                 "Analyse complaint categories, subcategories, "
-                "and complaint patterns between the current "
-                "and previous periods."
+                "and complaint patterns between the selected "
+                "and comparison periods."
             ),
             "parameters": {
                 "type": "object",
@@ -105,8 +109,8 @@ tools = [
         "function": {
             "name": "investigate_payments",
             "description": (
-                "Analyse payment activity, failed payments, "
-                "payment status, and payment methods."
+                "Analyse payment behaviour, payment failures, "
+                "methods, and status changes."
             ),
             "parameters": {
                 "type": "object",
@@ -120,7 +124,7 @@ tools = [
             "name": "investigate_customer_interactions",
             "description": (
                 "Analyse customer calls, contact reasons, "
-                "call outcomes, and customer interaction trends."
+                "call outcomes, and interaction trends."
             ),
             "parameters": {
                 "type": "object",
@@ -133,8 +137,8 @@ tools = [
         "function": {
             "name": "investigate_account_health",
             "description": (
-                "Analyse account types, balances, arrears, "
-                "vulnerability, and debt status."
+                "Analyse balances, arrears, debt status, "
+                "vulnerability, and financial health."
             ),
             "parameters": {
                 "type": "object",
@@ -150,27 +154,26 @@ tools = [
 # ============================================================
 
 def execute_tool(name, periods):
-    if name == "investigate_complaints":
-        return investigate_complaints(periods)
 
-    if name == "investigate_billing":
-        return investigate_billing(periods)
-
-    if name == "investigate_meter":
-        return investigate_meter(periods)
-
-    if name == "investigate_payments":
-        return investigate_payments(periods)
-
-    if name == "investigate_customer_interactions":
-        return investigate_customer_interactions(periods)
-
-    if name == "investigate_account_health":
-        return investigate_account_health(periods)
-
-    return {
-        "error": f"Unknown tool: {name}"
+    mapping = {
+        "investigate_complaints": investigate_complaints,
+        "investigate_billing": investigate_billing,
+        "investigate_meter": investigate_meter,
+        "investigate_payments": investigate_payments,
+        "investigate_customer_interactions": (
+            investigate_customer_interactions
+        ),
+        "investigate_account_health": investigate_account_health,
     }
+
+    function = mapping.get(name)
+
+    if function is None:
+        return {
+            "error": f"Unknown tool: {name}"
+        }
+
+    return function(periods)
 
 
 # ============================================================
@@ -189,10 +192,15 @@ def load_prompt():
 
 
 # ============================================================
-# JSON PARSING
+# JSON
 # ============================================================
 
 def parse_json_response(content):
+    """
+    Parse Claude's JSON even if it accidentally surrounds the
+    object with prose or Markdown fences.
+    """
+
     if not content:
         raise RuntimeError(
             "Claude returned an empty response."
@@ -200,38 +208,60 @@ def parse_json_response(content):
 
     text = content.strip()
 
-    if text.startswith("```json"):
-        text = text[7:]
-    elif text.startswith("```"):
-        text = text[3:]
+    # Remove Markdown fences.
+    text = re.sub(
+        r"^```(?:json)?\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
 
-    if text.endswith("```"):
-        text = text[:-3]
+    text = re.sub(
+        r"\s*```$",
+        "",
+        text,
+    )
 
     text = text.strip()
 
+    # Direct JSON.
     try:
         result = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            "Claude did not return valid JSON.\n\n"
-            f"Response:\n{text}"
-        ) from exc
+        if isinstance(result, dict):
+            return result
+    except json.JSONDecodeError:
+        pass
 
-    if not isinstance(result, dict):
-        raise RuntimeError(
-            "Claude returned JSON, but the result was not an object."
-        )
+    # JSON embedded in surrounding prose.
+    start = text.find("{")
+    end = text.rfind("}")
 
-    return result
+    if start != -1 and end > start:
+        candidate = text[start:end + 1]
+
+        try:
+            result = json.loads(candidate)
+
+            if isinstance(result, dict):
+                return result
+
+        except json.JSONDecodeError:
+            pass
+
+    raise RuntimeError(
+        "Claude did not return valid JSON.\n\n"
+        f"Response:\n{text}"
+    )
 
 
 # ============================================================
-# VALIDATION
+# RESULT VALIDATION
 # ============================================================
 
 REQUIRED_FIELDS = [
     "kpi",
+    "period",
+    "comparison_period",
     "previous_value",
     "current_value",
     "unit",
@@ -251,7 +281,8 @@ REQUIRED_FIELDS = [
 ]
 
 
-def validate_result(result):
+def validate_result(result, kpi_name):
+
     missing = [
         field
         for field in REQUIRED_FIELDS
@@ -263,6 +294,9 @@ def validate_result(result):
             "Investigation result is missing fields: "
             + ", ".join(missing)
         )
+
+    if result.get("kpi") != kpi_name:
+        result["kpi"] = kpi_name
 
     for field in (
         "secondary_factors",
@@ -281,12 +315,15 @@ def validate_result(result):
 
 
 # ============================================================
-# OPENROUTER CALL
+# MODEL CALL
 # ============================================================
 
-def call_model(messages, *, use_tools=True):
+def call_model(messages, use_tools=True):
+
     try:
+
         if use_tools:
+
             return client.chat.completions.create(
                 model=MODEL,
                 messages=messages,
@@ -303,12 +340,14 @@ def call_model(messages, *, use_tools=True):
         )
 
     except Exception as exc:
-        error_text = str(exc)
 
-        if "401" in error_text or "User not found" in error_text:
+        message = str(exc)
+
+        if "401" in message or "User not found" in message:
+
             raise RuntimeError(
                 "OpenRouter authentication failed. "
-                "Check OPENROUTER_API_KEY and the OpenRouter account."
+                "Check OPENROUTER_API_KEY."
             ) from exc
 
         raise
@@ -319,15 +358,16 @@ def call_model(messages, *, use_tools=True):
 # ============================================================
 
 def run_investigation(
+    kpi_name,
     start_period,
     end_period,
+    action_audience,
 ):
-    """
-    Run a Complaint Rate investigation for the selected period.
 
-    The comparison period is automatically calculated as the
-    immediately preceding period of equal duration.
-    """
+    if kpi_name not in SUPPORTED_KPIS:
+        raise ValueError(
+            f"Unsupported KPI: {kpi_name}"
+        )
 
     prompt = load_prompt()
 
@@ -335,64 +375,59 @@ def run_investigation(
     # KPI
     # --------------------------------------------------------
 
-    kpi = calculate_complaint_rate(
-        start_period=start_period,
-        end_period=end_period,
-    )
+    kpi = calculate_kpi(
+    kpi_name=kpi_name,
+    start_period=start_period,
+    end_period=end_period,
+)
 
     # --------------------------------------------------------
     # PERIODS
     # --------------------------------------------------------
 
     periods = get_investigation_periods(
-        start_period=start_period,
-        end_period=end_period,
-    )
+    start_period=start_period,
+    end_period=end_period,
+    kpi_name=kpi_name,
+)
 
     # --------------------------------------------------------
-    # INITIAL MESSAGE
+    # USER MESSAGE
     # --------------------------------------------------------
 
     messages = [
         {
             "role": "user",
             "content": (
-                "Investigate the Complaint Rate.\n\n"
-
+                f"Investigate the KPI: {kpi_name}\n\n"
                 "Selected investigation period:\n"
                 f"{periods['current_start'].date()} "
                 f"to {periods['current_end'].date()}\n\n"
-
                 "Comparison period:\n"
                 f"{periods['previous_start'].date()} "
                 f"to {periods['previous_end'].date()}\n\n"
-
-                "KPI data:\n"
+                "KPI calculation:\n"
                 + json.dumps(
                     kpi,
                     indent=2,
                     default=str,
                 )
                 + "\n\n"
-
-                "Investigation periods:\n"
-                + json.dumps(
-                    periods,
-                    indent=2,
-                    default=str,
-                )
+                "Use investigation tools to determine WHY "
+                "this KPI moved."
             ),
         }
     ]
 
     # --------------------------------------------------------
-    # INVESTIGATION LOOP
+    # TOOL LOOP
     # --------------------------------------------------------
 
     for step_number in range(
         1,
         MAX_INVESTIGATION_STEPS + 1,
     ):
+
         response = call_model(
             [
                 {
@@ -406,14 +441,17 @@ def run_investigation(
 
         message = response.choices[0].message
 
-        # Claude can finish before max steps.
+        # Claude can finish early.
         if not message.tool_calls:
 
             result = parse_json_response(
                 message.content
             )
 
-            result = validate_result(result)
+            result = validate_result(
+                result,
+                kpi_name,
+            )
 
             result["_raw_kpi"] = kpi
             result["_periods"] = periods
@@ -421,7 +459,6 @@ def run_investigation(
 
             return result
 
-        # Save assistant tool call request.
         messages.append(
             {
                 "role": "assistant",
@@ -440,15 +477,17 @@ def run_investigation(
             }
         )
 
-        # Execute tools.
         for call in message.tool_calls:
 
             try:
+
                 tool_result = execute_tool(
                     call.function.name,
                     periods,
                 )
+
             except Exception as exc:
+
                 tool_result = {
                     "error": str(exc)
                 }
@@ -473,11 +512,15 @@ def run_investigation(
         {
             "role": "user",
             "content": (
-                "The maximum investigation steps have been reached. "
+                "FINAL RESPONSE INSTRUCTION. "
                 "Do not call any more tools. "
-                "Using only the evidence collected so far, "
-                "produce the final JSON result exactly according "
-                "to the required schema."
+                "Return ONLY one valid JSON object. "
+                "Do not write prose before or after the JSON. "
+                "Do not use Markdown or code fences. "
+                "The first character must be { and the final "
+                "character must be }. "
+                "Use only the evidence already collected. "
+                "Follow the required schema exactly."
             ),
         }
     )
@@ -493,16 +536,19 @@ def run_investigation(
         use_tools=False,
     )
 
-    final_message = final_response.choices[0].message
-
     result = parse_json_response(
-        final_message.content
+        final_response.choices[0].message.content
     )
 
-    result = validate_result(result)
+    result = validate_result(
+        result,
+        kpi_name,
+    )
 
     result["_raw_kpi"] = kpi
     result["_periods"] = periods
-    result["_investigation_steps"] = MAX_INVESTIGATION_STEPS
+    result["_investigation_steps"] = (
+        MAX_INVESTIGATION_STEPS
+    )
 
     return result
