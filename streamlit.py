@@ -1,8 +1,12 @@
 import streamlit as st
 from datetime import datetime, timedelta
 
-from kpi import get_available_date_range
+from kpi import (
+    SUPPORTED_KPIS,
+    get_available_date_range,
+)
 from orchestration import run_investigation
+from chatbot import ask_chatbot
 
 
 # ============================================================
@@ -33,6 +37,9 @@ if "last_start_period" not in st.session_state:
 if "last_end_period" not in st.session_state:
     st.session_state.last_end_period = None
 
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
 
 # ============================================================
 # CSS
@@ -45,9 +52,9 @@ st.markdown(
 :root {
     --bg: #080b11;
     --panel: #10151d;
-    --border: #242d39;
+    --border: #2a3442;
     --text: #f5f7fa;
-    --muted: #8490a2;
+    --muted: #a7b0bf;
     --purple: #7c6cff;
     --green: #43d995;
     --red: #ff7070;
@@ -65,7 +72,7 @@ body,
 
 .block-container {
     max-width: 1400px;
-    padding-top: 2rem;
+    padding-top: 3rem;
     padding-bottom: 3rem;
 }
 
@@ -82,7 +89,7 @@ body,
 }
 
 .sidebar-subtitle {
-    color: #788496;
+    color: #a0aaba;
     font-size: 11px;
 }
 
@@ -91,7 +98,7 @@ body,
     background: #101722;
     border: 1px solid #222c39;
     border-radius: 12px;
-    color: #7f8b9d;
+    color: #d9e1ec;
     font-size: 10px;
     line-height: 1.6;
 }
@@ -100,6 +107,8 @@ body,
     display: flex;
     justify-content: space-between;
     align-items: center;
+    min-height: 54px;
+    padding-top: 6px;
     padding-bottom: 18px;
     margin-bottom: 28px;
     border-bottom: 1px solid var(--border);
@@ -128,10 +137,11 @@ body,
     color: white;
     font-size: 16px;
     font-weight: 750;
+    line-height: 1.35;
 }
 
 .header-subtitle {
-    color: #788496;
+    color: #a7b0bf;
     font-size: 10px;
 }
 
@@ -174,7 +184,7 @@ body,
 .hero-subtitle {
     max-width: 650px;
     margin: 10px auto 0;
-    color: #8490a2;
+    color: #a7b0bf;
     font-size: 13px;
     line-height: 1.7;
 }
@@ -190,7 +200,7 @@ body,
 }
 
 .start-label {
-    color: #7d899b;
+    color: #aeb7c5;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
@@ -207,7 +217,7 @@ body,
 .start-description {
     max-width: 620px;
     margin: 10px auto 0;
-    color: #7f8b9d;
+    color: #d9e1ec;
     font-size: 12px;
     line-height: 1.7;
 }
@@ -223,7 +233,7 @@ body,
 }
 
 .period-label {
-    color: #7d899b;
+    color: #aeb7c5;
     font-size: 9px;
     font-weight: 800;
     text-transform: uppercase;
@@ -238,7 +248,7 @@ body,
 }
 
 .period-compare {
-    color: #7f8b9d;
+    color: #d9e1ec;
     font-size: 10px;
     margin-top: 4px;
 }
@@ -252,7 +262,7 @@ body,
 }
 
 .kpi-label {
-    color: #7f8b9c;
+    color: #aeb7c5;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
@@ -268,7 +278,7 @@ body,
 }
 
 .kpi-meta {
-    color: #8490a2;
+    color: #a7b0bf;
     font-size: 12px;
     margin-top: 9px;
 }
@@ -291,7 +301,7 @@ body,
 }
 
 .info-label {
-    color: #7d899a;
+    color: #aeb7c5;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
@@ -327,7 +337,7 @@ body,
 }
 
 .driver-description {
-    color: #84958f;
+    color: #aebbb5;
     font-size: 10px;
     line-height: 1.5;
     margin-top: 7px;
@@ -355,7 +365,7 @@ body,
 }
 
 .risk-description {
-    color: #a38d92;
+    color: #c0adb1;
     font-size: 10px;
     line-height: 1.5;
     margin-top: 7px;
@@ -389,12 +399,230 @@ body,
 }
 
 .footer {
-    color: #536074;
+    color: #7f8a9a;
     font-size: 10px;
     text-align: center;
     border-top: 1px solid var(--border);
     padding-top: 15px;
     margin-top: 30px;
+}
+
+
+
+/* ============================================================
+   FLOATING CHAT BUTTON
+   ============================================================ */
+
+.st-key-chat_support {
+    position: fixed !important;
+    right: 28px !important;
+    bottom: 24px !important;
+    z-index: 9999 !important;
+}
+
+/* White circular button */
+.st-key-chat_support button {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    min-height: 64px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    background: #ffffff !important;
+    border: none !important;
+    outline: none !important;
+
+    border-radius: 50% !important;
+
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35) !important;
+
+    position: relative !important;
+
+    font-size: 0 !important;
+}
+
+/* Hide Streamlit's original icon and arrow */
+.st-key-chat_support button > * {
+    visibility: hidden !important;
+}
+
+/* Our InsightForge sparkle */
+.st-key-chat_support button::before {
+    content: "✦" !important;
+
+    visibility: visible !important;
+
+    position: absolute !important;
+
+    left: 50% !important;
+    top: 50% !important;
+
+    transform: translate(-50%, -55%) !important;
+
+    color: #765cff !important;
+
+    font-size: 36px !important;
+    font-weight: 800 !important;
+
+    line-height: 1 !important;
+
+    text-shadow:
+        0 0 10px rgba(118, 92, 255, 0.35) !important;
+}
+
+/* Completely remove the second pseudo-element */
+.st-key-chat_support button::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* Hover */
+.st-key-chat_support button:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+
+/* ============================================================
+   NOTIFICATION DOT
+   ============================================================ */
+
+.chat-notification-dot {
+    position: fixed;
+
+    right: 25px;
+    bottom: 78px;
+
+    width: 9px;
+    height: 9px;
+
+    border-radius: 50%;
+
+    background: #ff7070;
+
+    border: 2px solid #080b11;
+
+    z-index: 10000;
+
+    pointer-events: none;
+}
+/* ============================================================
+   SUGGESTED QUESTIONS
+   ============================================================ */
+
+.suggested-title {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.suggested-subtitle {
+    color: #d9e1ec;
+    font-size: 10px;
+    margin-bottom: 14px;
+}
+
+.suggestion-button {
+    width: 100%;
+    text-align: left;
+
+    padding: 10px 12px;
+    margin-bottom: 8px;
+
+    background: #101620;
+    color: #e9ecf3;
+
+    border: 1px solid #252f3d;
+    border-radius: 10px;
+
+    font-size: 11px;
+    line-height: 1.4;
+
+    cursor: pointer;
+}
+
+.suggestion-button:hover {
+    background: #151c29;
+    border-color: rgba(124,108,255,.45);
+}
+
+/* ============================================================
+   FINAL CONTRAST POLISH
+   ============================================================ */
+
+/* Main section headings */
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] h4 {
+    color: #eef2f7 !important;
+}
+
+/* Streamlit tabs */
+[data-testid="stTabs"] button {
+    color: #aeb7c5 !important;
+}
+
+[data-testid="stTabs"] button[aria-selected="true"] {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Evidence, root cause, timeline and confidence text */
+[data-testid="stTabs"] p {
+    color: #d9e0e9;
+}
+
+/* Captions inside investigation detail */
+[data-testid="stTabs"] [data-testid="stCaptionContainer"] {
+    color: #aeb7c5 !important;
+}
+
+/* Timeline expanders */
+[data-testid="stExpander"] summary {
+    color: #d7dee8 !important;
+}
+
+[data-testid="stExpander"] summary p {
+    color: #d7dee8 !important;
+}
+
+[data-testid="stExpander"] {
+    color: #d9e0e9 !important;
+}
+
+/* Sidebar labels and captions */
+[data-testid="stSidebar"] label {
+    color: #c5ceda !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+    color: #a7b0bf !important;
+}
+
+/* Chat text */
+.suggested-subtitle {
+    color: #aeb7c5 !important;
+}
+
+.suggestion-button {
+    color: #edf1f6 !important;
+}
+
+/* Footer remains subtle, but readable */
+.footer {
+    color: #7f8a9a !important;
+}
+
+/* Slightly clearer dividers */
+[data-testid="stDivider"] {
+    border-color: #2a3442 !important;
 }
 
 </style>
@@ -403,14 +631,6 @@ body,
 )
 
 
-# ============================================================
-# AVAILABLE DATES
-# ============================================================
-
-date_range = get_available_date_range()
-
-min_date = date_range["min_date"].date()
-max_date = date_range["max_date"].date()
 
 
 # ============================================================
@@ -436,8 +656,28 @@ with st.sidebar:
     st.markdown("### Investigation")
 
     kpi = st.selectbox(
-        "Select KPI",
-        ["Complaint Rate"],
+    "Select KPI",
+    SUPPORTED_KPIS,
+)
+
+    # ========================================================
+    # AVAILABLE DATES
+    # ========================================================
+
+    date_range = get_available_date_range(kpi)
+
+    min_date = date_range["min_date"].date()
+    max_date = date_range["max_date"].date()
+    action_audience = st.selectbox(
+        "Select Action Audience",
+        [
+            "General / Business",
+            "Operations Manager",
+            "Billing Team",
+            "Customer Service",
+            "Finance Team",
+            "Senior Management",
+        ]
     )
 
     st.markdown("### Investigation Period")
@@ -524,6 +764,7 @@ with st.sidebar:
         st.session_state.investigation_completed = False
         st.session_state.last_start_period = None
         st.session_state.last_end_period = None
+        st.session_state.chat_history = []
 
         st.rerun()
 
@@ -570,6 +811,167 @@ st.html(
 )
 
 
+# ============================================================
+# FLOATING CHAT SUPPORT
+# ============================================================
+
+# Notification dot
+st.markdown(
+    '<div class="chat-notification-dot"></div>',
+    unsafe_allow_html=True,
+)
+
+
+# Suggested questions
+suggested_questions = [
+    "Why did the complaint rate change?",
+    "Which factors drove the change?",
+    "What should I do next?",
+    "How does this compare with the previous period?",
+]
+
+
+with st.popover("💬", key="chat_support"):
+
+    st.markdown(
+        """
+        <div class="suggested-title">
+            ✨ Suggested Questions
+        </div>
+
+        <div class="suggested-subtitle">
+            Ask about the current investigation
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # --------------------------------------------------------
+    # SUGGESTED QUESTIONS
+    # --------------------------------------------------------
+
+    # Show suggested questions only before the conversation starts
+    if not st.session_state.chat_history:
+
+        st.markdown(
+            """
+            <div class="suggested-title">
+                Suggested Questions
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        for i, suggestion in enumerate(suggested_questions):
+
+            if st.button(
+                suggestion,
+                key=f"suggestion_{i}",
+                use_container_width=True,
+            ):
+                st.session_state.chat_question = suggestion
+                st.rerun()
+    st.divider()
+
+    # --------------------------------------------------------
+    # CHAT HISTORY
+    # --------------------------------------------------------
+
+    for message in st.session_state.chat_history:
+
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+
+    # --------------------------------------------------------
+    # CHAT INPUT
+    # --------------------------------------------------------
+
+    if "chat_question" not in st.session_state:
+        st.session_state.chat_question = ""
+
+
+    with st.form(
+        "chat_form",
+        clear_on_submit=True,
+    ):
+
+        question = st.text_input(
+            "Message",
+            value=st.session_state.chat_question,
+            placeholder="Ask something about the investigation...",
+            label_visibility="collapsed",
+        )
+
+        submitted = st.form_submit_button(
+            "Send",
+            use_container_width=True,
+            type="primary",
+        )
+
+
+    # --------------------------------------------------------
+    # SEND MESSAGE
+    # --------------------------------------------------------
+
+    if submitted and question.strip():
+
+        previous_history = list(
+            st.session_state.chat_history
+        )
+
+        investigation_result = (
+            st.session_state.investigation_result or {}
+        )
+
+        periods = {
+            "start_period": str(
+                st.session_state.last_start_period
+            ),
+            "end_period": str(
+                st.session_state.last_end_period
+            ),
+            "comparison_period": investigation_result.get(
+                "comparison_period",
+                {},
+            ),
+        }
+
+        try:
+
+            with st.spinner("Thinking..."):
+
+                response = ask_chatbot(
+                    question=question.strip(),
+                    investigation_result=investigation_result,
+                    periods=periods,
+                    chat_history=previous_history,
+                )
+
+            st.session_state.chat_history.append(
+                {
+                    "role": "user",
+                    "content": question.strip(),
+                }
+            )
+
+            st.session_state.chat_history.append(
+                {
+                    "role": "assistant",
+                    "content": response,
+                }
+            )
+
+            # Clear selected suggestion
+            st.session_state.chat_question = ""
+
+            st.rerun()
+
+        except Exception as exc:
+
+            st.error(
+                f"Unable to get response: {exc}"
+            )
 # ============================================================
 # RESULT
 # ============================================================
@@ -676,9 +1078,11 @@ if result is None:
             try:
 
                 investigation_result = run_investigation(
-                    start_period=start_period,
-                    end_period=end_period,
-                )
+    kpi_name=kpi,
+    start_period=start_period,
+    end_period=end_period,
+    action_audience=action_audience,
+)
 
                 st.session_state.investigation_result = (
                     investigation_result
@@ -910,8 +1314,8 @@ if current_value is not None:
                 <div>
 
                     <div class="kpi-label">
-                        Complaint Rate
-                    </div>
+    {result.get("kpi", kpi)}
+</div>
 
                     <div class="kpi-value">
                         {current_value:.2f}
