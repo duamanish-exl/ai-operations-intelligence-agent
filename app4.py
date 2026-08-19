@@ -128,10 +128,10 @@ body,
 [data-testid="stAppViewContainer"] .block-container,
 [data-testid="stMain"] .block-container {
     max-width: 1140px !important;
-    width: 1140px !important;
-    padding-top: 2rem;
-    padding-bottom: 3rem;
-    margin-left: 260px !important;
+    width: calc(100% - 40px) !important;
+    padding-top: 2rem !important;
+    padding-bottom: 3rem !important;
+    margin-left: auto !important;
     margin-right: auto !important;
     flex: none !important;
 }
@@ -359,8 +359,8 @@ body,
     padding: 4px 16px 10px;
     position: fixed;
     top: 3.6rem;
-    left: 340px;
-    width: calc(100% - 340px - 4rem);
+    left: 250px;
+    width: calc(100% - 266px);
     max-width: 1400px;
     z-index: 999;
     box-shadow: 0 8px 20px rgba(0,0,0,.35);
@@ -463,15 +463,20 @@ body,
     line-height: 1.7;
 }
 .st-key-profile_grid {
-    width: min(calc(100vw - var(--if-sidebar-w, 244px) - 4rem), 1400px) !important;
-    max-width: 1400px !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    width: 900px !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Give the profile rows more breathing room */
+.st-key-profile_grid [data-testid="stHorizontalBlock"] {
+    gap: 24px !important;
 }
 
 .st-key-profile_grid button {
     width: 100% !important;
-    height: 118px !important;
+    height: 108px !important;
     border-radius: 999px !important;
     background: #1a2029 !important;
     border: 1px solid #3a4557 !important;
@@ -497,7 +502,6 @@ body,
     font-size: 15px !important;
     font-weight: 650 !important;
 }
-
 /* per-profile accent (targets the button's first line as an icon-like badge via border-top color) */
 .st-key-profile_general button { border-top: 3px solid var(--blue) !important; }
 .st-key-profile_ops button { border-top: 3px solid var(--purple) !important; }
@@ -521,7 +525,7 @@ body,
 
 .period-card {
     max-width: 820px;
-    margin: 0 auto 24px;
+    margin: 100px auto 24px;;
     padding: 16px 18px;
     background: #1a2029;
     border: 1px solid #3a4557;
@@ -1361,7 +1365,10 @@ with st.container(key="topbar_wrap"):
         )
 
         with col_kpi:
-            kpi = st.selectbox("KPI", ["Complaint Rate"])
+            kpi = st.selectbox("KPI", ["Complaint Rate",
+                     "Debt %",
+                     "Billing Accurace",
+                     "Outrage Impact"])
 
         with col_start:
             start_period = st.date_input(
