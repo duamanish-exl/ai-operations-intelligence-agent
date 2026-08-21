@@ -662,7 +662,10 @@ with st.sidebar:
 
     kpi = st.selectbox(
         "Select KPI",
-        ["Complaint Rate"],
+        ["Complaint Rate",
+         "Debt %",
+         "Billing Accurace",
+         "Outrage Impact"],
     )
 
 
